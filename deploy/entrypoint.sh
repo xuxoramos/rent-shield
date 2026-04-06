@@ -13,10 +13,10 @@ supervise() {
 }
 
 # Start FastAPI (supervised, background)
-# Single worker keeps memory low on 4 GB VPS; bump to 2 only if CPU-bound.
+# Two workers fit comfortably on an 8 GB VPS (~150-200 MB each).
 supervise uvicorn uvicorn renter_shield.api:app \
     --host 0.0.0.0 --port 8000 \
-    --workers 1 \
+    --workers 2 \
     --log-level info &
 
 # Start renter Streamlit (supervised, background)
