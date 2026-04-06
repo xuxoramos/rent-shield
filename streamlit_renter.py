@@ -437,7 +437,7 @@ def page_property(bbl: str) -> None:
 # PAGE: Owner Detail (simplified for renters)
 # =========================================================================
 def page_owner_detail(owner_id: str) -> None:
-    score_match = df.filter(pl.col("owner_id") == owner_id) if len(df) > 0 else pl.DataFrame()
+    score_match = df.filter(pl.col("owner_id") == owner_id) if len(df) > 0 else df.clear()
 
     if len(score_match) == 0:
         st.error(f"Owner not found: {owner_id}")
@@ -470,7 +470,7 @@ def page_owner_detail(owner_id: str) -> None:
         reg_ids = owner_regs["registration_id"].to_list()
         owner_props = props_df.filter(pl.col("registration_id").is_in(reg_ids))
     else:
-        owner_props = pl.DataFrame()
+        owner_props = props_df.clear()
 
     if len(owner_props) == 0:
         st.info("No linked properties found for this owner.")
