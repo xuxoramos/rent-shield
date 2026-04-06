@@ -19,4 +19,5 @@ exec streamlit run streamlit_investigator.py \
     --server.port 8502 \
     --server.address 0.0.0.0 \
     --server.headless true \
+    --server.baseUrlPath investigator \
     --browser.gatherUsageStats false
