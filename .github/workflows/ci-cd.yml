@@ -68,8 +68,8 @@ jobs:
 
             cd /opt/renter-shield
 
-            # Write env file for docker compose
-            cat > .env << EOF
+            # Write env file where docker compose can find it
+            cat > deploy/.env << EOF
           LI_API_KEYS=${API_KEYS}
           LI_OUTPUT_DIR=/app/output
           EOF
