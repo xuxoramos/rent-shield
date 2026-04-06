@@ -164,13 +164,19 @@ class HUDREACAdapter(JurisdictionAdapter):
             .otherwise(pl.lit("open"))
         )
 
+        # Jurisdiction = "hud_reac_" + lowercase state code (e.g. hud_reac_ny)
+        jur_expr = (
+            pl.lit("hud_reac_")
+            + pl.col("STD_ST").cast(pl.Utf8).fill_null("unknown").str.to_lowercase()
+        )
+
         return raw.select(
             (pl.lit("reac-") + pl.col("REAC_LAST_INSPECTION_ID").cast(pl.Utf8)).alias("violation_id"),
             bbl_expr.alias("bbl"),
             severity_expr.alias("severity_tier"),
             status_expr.alias("status"),
             pl.col("REAC_LAST_INSPECTION_DATE").str.slice(0, 10).str.to_date("%Y-%m-%d").alias("inspection_date"),
-            pl.lit("hud_reac").alias("jurisdiction"),
+            jur_expr.alias("jurisdiction"),
         )
 
     # ------------------------------------------------------------------
@@ -191,13 +197,18 @@ class HUDREACAdapter(JurisdictionAdapter):
             + pl.col("STD_ZIP5").cast(pl.Utf8).fill_null("")
         )
 
+        jur_expr = (
+            pl.lit("hud_reac_")
+            + pl.col("STD_ST").cast(pl.Utf8).fill_null("unknown").str.to_lowercase()
+        )
+
         return raw.select(
             bbl_expr.alias("bbl"),
             pl.col("PROPERTY_ID").cast(pl.Utf8).alias("registration_id"),
             pl.col("TOTAL_UNIT_COUNT").cast(pl.Float64, strict=False).alias("units_residential"),
             pl.lit(None, dtype=pl.Utf8).alias("year_built"),
             addr_expr.str.strip_chars().alias("address"),
-            pl.lit("hud_reac").alias("jurisdiction"),
+            jur_expr.alias("jurisdiction"),
         )
 
     # ------------------------------------------------------------------
@@ -211,6 +222,11 @@ class HUDREACAdapter(JurisdictionAdapter):
         # Split MGMT_CONTACT_FULL_NAME into first/last
         name = pl.col("MGMT_CONTACT_FULL_NAME").str.to_uppercase().str.strip_chars().fill_null("")
 
+        jur_expr = (
+            pl.lit("hud_reac_")
+            + pl.col("STD_ST").cast(pl.Utf8).fill_null("unknown").str.to_lowercase()
+        )
+
         return raw.select(
             pl.col("PROPERTY_ID").cast(pl.Utf8).alias("registration_id"),
             # Heuristic: first word = first name, rest = last name
@@ -219,5 +235,5 @@ class HUDREACAdapter(JurisdictionAdapter):
             pl.col("MGMT_AGENT_ORG_NAME").str.to_uppercase().str.strip_chars().alias("business_name"),
             pl.lit(None, dtype=pl.Utf8).alias("business_house_number"),
             pl.col("MGMT_CONTACT_ADDRESS_LINE1").cast(pl.Utf8).alias("business_street"),
-            pl.lit("hud_reac").alias("jurisdiction"),
+            jur_expr.alias("jurisdiction"),
         )

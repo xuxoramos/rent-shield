@@ -65,7 +65,7 @@ SOURCE_EXCLUDES = {
 # Metadata for the new version
 # ---------------------------------------------------------------------------
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 
 DESCRIPTION = """\
 <p><strong>Renter Shield v{version}</strong> — multi-jurisdiction landlord
@@ -73,14 +73,14 @@ harm-score toolkit for the NYOAG housing investigation.</p>
 
 <h3>What changed in v{version}</h3>
 <ul>
-  <li><strong>4 new jurisdictions</strong>: Austin, Miami-Dade, Detroit,
-      Los Angeles (total: 12 cities + HUD REAC federal data).</li>
-  <li><strong>Revised scoring</strong>: SVI-style composite harm score with
-      confidence-tiered ownership resolution.</li>
-  <li><strong>Access control</strong>: SQLite-backed self-registration with
-      audit logging for both API and Streamlit dashboards.</li>
-  <li><strong>Package rename</strong>: <code>landlord-investigator</code> →
-      <code>renter-shield</code> (all imports, CLI, docs).</li>
+  <li><strong>HUD REAC state-level splits</strong>: Federal HUD inspection data
+      is now split by state (e.g. <code>hud_reac_ny</code>,
+      <code>hud_reac_ca</code>) instead of a single national bucket.
+      Ownership resolution and SVI percentile scoring now operate
+      per-state for more meaningful comparisons.</li>
+  <li><strong>Interactive dataframe tables</strong>: Ranked owner tables and
+      search results replaced with <code>st.dataframe</code> — sortable
+      columns, visual score bars, and click-to-navigate rows.</li>
 </ul>
 
 <h3>Archive contents</h3>

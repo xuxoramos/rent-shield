@@ -51,7 +51,6 @@ JURISDICTION_DISPLAY = {
     "boston": "Boston",
     "philadelphia": "Philadelphia",
     "chicago": "Chicago",
-    "hud_reac": "HUD REAC (Federal)",
     "sf": "San Francisco",
     "seattle": "Seattle",
     "pittsburgh": "Pittsburgh",
@@ -60,6 +59,34 @@ JURISDICTION_DISPLAY = {
     "miami": "Miami-Dade",
     "detroit": "Detroit",
 }
+
+_US_STATES = {
+    "al": "Alabama", "ak": "Alaska", "az": "Arizona", "ar": "Arkansas",
+    "ca": "California", "co": "Colorado", "ct": "Connecticut", "de": "Delaware",
+    "dc": "D.C.", "fl": "Florida", "ga": "Georgia", "hi": "Hawaii",
+    "id": "Idaho", "il": "Illinois", "in": "Indiana", "ia": "Iowa",
+    "ks": "Kansas", "ky": "Kentucky", "la": "Louisiana", "me": "Maine",
+    "md": "Maryland", "ma": "Massachusetts", "mi": "Michigan", "mn": "Minnesota",
+    "ms": "Mississippi", "mo": "Missouri", "mt": "Montana", "ne": "Nebraska",
+    "nv": "Nevada", "nh": "New Hampshire", "nj": "New Jersey", "nm": "New Mexico",
+    "ny": "New York", "nc": "North Carolina", "nd": "North Dakota", "oh": "Ohio",
+    "ok": "Oklahoma", "or": "Oregon", "pa": "Pennsylvania", "ri": "Rhode Island",
+    "sc": "South Carolina", "sd": "South Dakota", "tn": "Tennessee", "tx": "Texas",
+    "ut": "Utah", "vt": "Vermont", "va": "Virginia", "wa": "Washington",
+    "wv": "West Virginia", "wi": "Wisconsin", "wy": "Wyoming",
+    "pr": "Puerto Rico", "vi": "U.S. Virgin Islands", "gu": "Guam",
+    "as": "American Samoa", "mp": "Northern Mariana Islands",
+}
+
+
+def _display_jurisdiction(jur: str) -> str:
+    if jur in JURISDICTION_DISPLAY:
+        return JURISDICTION_DISPLAY[jur]
+    if jur.startswith("hud_reac_"):
+        state_code = jur[len("hud_reac_"):]
+        state_name = _US_STATES.get(state_code, state_code.upper())
+        return f"HUD REAC — {state_name}"
+    return jur.replace("_", " ").title()
 
 
 # ---------------------------------------------------------------------------
@@ -219,7 +246,7 @@ def page_overview() -> None:
                 break
             row = card_rows[idx]
             jur = row["jurisdiction"]
-            display = JURISDICTION_DISPLAY.get(jur, jur.title())
+            display = _display_jurisdiction(jur)
 
             with col:
                 st.subheader(display)
@@ -255,7 +282,7 @@ def page_overview() -> None:
                     break
                 us = unscored_stats[idx]
                 jur = us["jurisdiction"]
-                display = JURISDICTION_DISPLAY.get(jur, jur.title())
+                display = _display_jurisdiction(jur)
 
                 with col:
                     st.subheader(f"{display}  ⚠️")
@@ -291,7 +318,9 @@ def page_overview() -> None:
 
             search_display = matches.select(
                 pl.col("owner_id").alias("Owner"),
-                pl.col("jurisdiction").replace(JURISDICTION_DISPLAY).alias("Jurisdiction"),
+                pl.col("jurisdiction").map_elements(
+                    _display_jurisdiction, return_dtype=pl.Utf8
+                ).alias("Jurisdiction"),
                 pl.col("total_harm_score").alias("Harm Score"),
                 pl.col("confidence").replace(CONFIDENCE_LABELS).alias("Confidence"),
             ).to_pandas()
@@ -326,7 +355,7 @@ def page_overview() -> None:
 # PAGE: Jurisdiction
 # =========================================================================
 def page_jurisdiction(jur: str) -> None:
-    display = JURISDICTION_DISPLAY.get(jur, jur.title())
+    display = _display_jurisdiction(jur)
     jur_df = df.filter(pl.col("jurisdiction") == jur)
 
     # Check if this is an unscored jurisdiction
@@ -544,7 +573,7 @@ def page_owner(owner_id: str) -> None:
 
     row = match.row(0, named=True)
     jur = row["jurisdiction"]
-    display_jur = JURISDICTION_DISPLAY.get(jur, jur.title())
+    display_jur = _display_jurisdiction(jur)
     conf = row["confidence"]
 
     bc1, bc2 = st.columns([1, 1])

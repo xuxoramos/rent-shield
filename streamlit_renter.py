@@ -40,14 +40,42 @@ JURISDICTION_DISPLAY = {
     "boston": "Boston",
     "philadelphia": "Philadelphia",
     "chicago": "Chicago",
-    "hud_reac": "HUD REAC (Federal)",
     "sf": "San Francisco",
     "seattle": "Seattle",
     "pittsburgh": "Pittsburgh",
 }
 
+_US_STATES = {
+    "al": "Alabama", "ak": "Alaska", "az": "Arizona", "ar": "Arkansas",
+    "ca": "California", "co": "Colorado", "ct": "Connecticut", "de": "Delaware",
+    "dc": "D.C.", "fl": "Florida", "ga": "Georgia", "hi": "Hawaii",
+    "id": "Idaho", "il": "Illinois", "in": "Indiana", "ia": "Iowa",
+    "ks": "Kansas", "ky": "Kentucky", "la": "Louisiana", "me": "Maine",
+    "md": "Maryland", "ma": "Massachusetts", "mi": "Michigan", "mn": "Minnesota",
+    "ms": "Mississippi", "mo": "Missouri", "mt": "Montana", "ne": "Nebraska",
+    "nv": "Nevada", "nh": "New Hampshire", "nj": "New Jersey", "nm": "New Mexico",
+    "ny": "New York", "nc": "North Carolina", "nd": "North Dakota", "oh": "Ohio",
+    "ok": "Oklahoma", "or": "Oregon", "pa": "Pennsylvania", "ri": "Rhode Island",
+    "sc": "South Carolina", "sd": "South Dakota", "tn": "Tennessee", "tx": "Texas",
+    "ut": "Utah", "vt": "Vermont", "va": "Virginia", "wa": "Washington",
+    "wv": "West Virginia", "wi": "Wisconsin", "wy": "Wyoming",
+    "pr": "Puerto Rico", "vi": "U.S. Virgin Islands", "gu": "Guam",
+    "as": "American Samoa", "mp": "Northern Mariana Islands",
+}
+
+
+def _display_jurisdiction(jur: str) -> str:
+    if jur in JURISDICTION_DISPLAY:
+        return JURISDICTION_DISPLAY[jur]
+    if jur.startswith("hud_reac_"):
+        state_code = jur[len("hud_reac_"):]
+        state_name = _US_STATES.get(state_code, state_code.upper())
+        return f"HUD REAC \u2014 {state_name}"
+    return jur.replace("_", " ").title()
+
+
 # Jurisdictions where we have owner/contact data for scoring
-_OWNER_DATA_JURISDICTIONS = {"nyc", "boston", "philadelphia", "chicago", "pittsburgh", "hud_reac"}
+_OWNER_DATA_JURISDICTIONS = {"nyc", "boston", "philadelphia", "chicago", "pittsburgh"}
 
 # Same severity weights as the DuckDB scoring engine (config.py)
 _SEVERITY_PTS = {1: 5.0, 2: 2.5, 3: 1.0, 4: 0.0}
@@ -114,7 +142,7 @@ def _no_owner_message(jurisdiction: str) -> str:
     }
     if jurisdiction in reasons:
         return f"\u2139\ufe0f **Owner unknown** \u2014 {reasons[jurisdiction]}"
-    if jurisdiction not in _OWNER_DATA_JURISDICTIONS:
+    if jurisdiction not in _OWNER_DATA_JURISDICTIONS and not jurisdiction.startswith("hud_reac_"):
         return "\u2139\ufe0f **Owner unknown** \u2014 Owner data is not available for this jurisdiction."
     return "\u2139\ufe0f **Owner unknown** \u2014 No owner record links to this property. The violation history below is still available."
 
@@ -275,7 +303,7 @@ def page_address_search() -> None:
         bbl = row["bbl"]
         jur = row["jurisdiction"]
         addr = row["address"] or "(no address)"
-        jur_display = JURISDICTION_DISPLAY.get(jur, jur.title())
+        jur_display = _display_jurisdiction(jur)
 
         prop_viols = viols_df.filter(pl.col("bbl") == bbl)
         pv_stats = _property_violation_score(prop_viols)
@@ -335,7 +363,7 @@ def page_property(bbl: str) -> None:
     prop = prop_match.row(0, named=True)
     jur = prop["jurisdiction"]
     addr = prop["address"] or bbl
-    jur_display = JURISDICTION_DISPLAY.get(jur, jur.title())
+    jur_display = _display_jurisdiction(jur)
 
     has_prior_search = "q" in st.query_params
     if has_prior_search:
@@ -489,7 +517,7 @@ def page_owner_detail(owner_id: str) -> None:
 
     owner_row = score_match.row(0, named=True)
     jur = owner_row.get("jurisdiction", "")
-    jur_display = JURISDICTION_DISPLAY.get(jur, jur.title())
+    jur_display = _display_jurisdiction(jur)
     display_name = owner_id.split(" [")[0].replace("_", " ").title() if owner_id else "Unknown"
     o_lk_label = owner_row.get("likert_label", "Unknown")
     o_lk_color = owner_row.get("likert_color", "⚪")
