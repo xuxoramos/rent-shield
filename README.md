@@ -1,6 +1,10 @@
 # renter-shield
 
+[![CI/CD](https://github.com/xuxoramos/rent-shield/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/xuxoramos/rent-shield/actions/workflows/ci-cd.yml)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19418743.svg)](https://doi.org/10.5281/zenodo.19418743)
+[![License: CC BY 4.0](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 Multi-jurisdiction landlord harm-score toolkit.  Downloads housing code
 enforcement data from eleven U.S. cities and federal HUD inspections,
