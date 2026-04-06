@@ -7,10 +7,10 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 Multi-jurisdiction landlord harm-score toolkit.  Downloads housing code
-enforcement data from eleven U.S. cities and federal HUD inspections,
-normalises it into a common schema, computes a composite harm score per
-landlord, and serves the results via a dual-audience REST API and two
-purpose-built Streamlit dashboards — one for renters and one for
+enforcement data from twelve U.S. cities and federal HUD inspections
+(split by state), normalises it into a common schema, computes a composite
+harm score per landlord, and serves the results via a dual-audience REST API
+and two purpose-built Streamlit dashboards — one for renters and one for
 investigators.
 
 ## Data Archive
@@ -42,7 +42,7 @@ To restore data after cloning:
 | Boston         | Code Enforcement + Building Violations + Assessment | CKAN | Assessment OWNER (via address bridge to violation sam_id) |
 | Seattle        | SDCI Code Complaints & Violations | Socrata | None (King County Assessor not on Socrata) |
 | Pittsburgh     | PLI/DOMI/ES Violations + PLI Permits + Allegheny County Assessments | CKAN (WPRDC) | None (no owner names in assessments) |
-| HUD REAC       | Multifamily Assisted Properties | ArcGIS FeatureServer | Management agent org + contact |
+| HUD REAC       | Multifamily Assisted Properties | ArcGIS FeatureServer | Management agent org + contact (split by state: `hud_reac_ny`, `hud_reac_ca`, etc.) |
 | Los Angeles    | LADBS Code Enforcement Cases | Socrata | None |
 | Austin         | Code Complaint Cases | Socrata | None |
 | Miami-Dade     | Code Compliance Violations + Building Violations | ArcGIS REST | Building Violation VIOL_NAME (owner/agent) |
@@ -57,10 +57,10 @@ property/violation records.
 | Jurisdiction | Scored owners | Addresses indexed |
 |--------------|---------------|-------------------|
 | NYC | 29,848 | 177K (87%) |
-| Boston | 8,236 | 94K (100%) |
+| Boston | 8,243 | 94K (100%) |
 | Detroit | 6,417 | 80K (100%) |
 | Philadelphia | 3,929 | 531K (100%) |
-| HUD REAC | 1,521 | 23K (100%) |
+| HUD REAC (per state) | 1,528 | 23K (100%) |
 | Miami-Dade | 260 | 61K (100%) |
 | Pittsburgh | 135 | 48K (90%) |
 | Chicago | 1 | 32K (100%) |
@@ -68,6 +68,10 @@ property/violation records.
 | Austin | — | 28K (100%) |
 | SF | — | 10K (100%) |
 | Seattle | — | 28K (100%) |
+
+HUD REAC data is split into per-state jurisdictions (e.g. `hud_reac_ny`,
+`hud_reac_ca`) so ownership resolution and SVI percentile scoring operate
+within each state rather than nationwide.
 
 ## Scoring Methodology
 
@@ -142,7 +146,7 @@ The scored Parquet file contains: `owner_id`, `jurisdiction`, `confidence`,
 
 #### Scoring Distribution
 
-As of 2026-04-05 (50,347 owners across 12 jurisdictions):
+As of 2026-04-06 (50,361 owners across 12 jurisdictions + HUD state splits):
 
 | Level | Count | % |
 |-------|-------|---|
@@ -290,6 +294,7 @@ renter_shield/
 │   └── detroit.py      # Blight Tickets via ArcGIS REST
 ├── ownership.py        # Confidence-tiered owner network resolution
 ├── scoring.py          # Two-stage scoring: DuckDB raw components + Polars SVI composite
+├── pdf_report.py       # Printable PDF property report (fpdf2)
 ├── pipeline.py         # Orchestrates download → load → resolve → score
 ├── audit.py            # SQLite-backed user registration, token auth, audit logging
 ├── cli.py              # Command-line interface
@@ -300,7 +305,9 @@ deploy/
 ├── Dockerfile          # Python 3.12-slim, FastAPI + 2 Streamlit apps
 ├── docker-compose.yml  # app + nginx reverse proxy (ports 8000, 8501, 8502)
 ├── entrypoint.sh       # Runs uvicorn + both Streamlit apps
-└── nginx.conf          # Rate-limited proxy, TLS-ready
+├── nginx.conf          # Rate-limited proxy, TLS-ready
+└── landing/            # Static landing page served at /about
+    └── index.html
 logs/
 └── audit.db            # SQLite user registrations + access audit trail (gitignored)
 ```
@@ -353,7 +360,12 @@ Requires self-registration before access (name, email, role).
 | Page | URL | Description |
 |------|-----|-------------|
 | **Address Search** | `/` | Search by address + jurisdiction, results show Likert rating per property and owner signal |
-| **Property Detail** | `/?page=property&bbl=...` | Violation timeline, Likert rating, owner Likert rating (if available), rating explainer |
+| **Property Detail** | `/?page=property&bbl=...` | Violation timeline, Likert rating, owner Likert rating (if available), rating explainer, downloadable PDF report |
+| **Owner Detail** | `/?page=owner&owner=...` | Landlord rating, properties managed, total violations, property list |
+
+The renter app includes a **Know Your Rights** sidebar with links to tenant
+protection resources, complaint hotlines, and legal aid organizations
+for each covered city.
 
 ### Investigator App (`streamlit_investigator.py` — port 8502)
 
@@ -421,7 +433,8 @@ SQLite-registered tokens are logged to the audit database.
 ## Deployment
 
 See [DEPLOY.md](DEPLOY.md) for Hetzner VPS deployment instructions
-(Docker + nginx + TLS).
+(Docker + nginx + TLS).  The nginx config also serves a static landing page
+at `/about` (source: `deploy/landing/index.html`).
 
 ## Configuration
 

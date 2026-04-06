@@ -59,7 +59,7 @@ in `config.py:JURISDICTION_REGISTRY`.
 | Boston         | Code Enforcement + Bldg Violations + Assessment | CKAN | `bos-{sam_id}` | Assessment OWNER + MAIL_* fields |
 | Seattle        | SDCI Code Complaints & Violations | Socrata | `sea-{address}` | None (King County Assessor not on Socrata) |
 | Pittsburgh     | PLI/DOMI/ES Violations + Allegheny County Assessments | CKAN (WPRDC) | `pit-{parcel_id}` | None (no owner names in assessments) |
-| HUD REAC       | Multifamily Assisted Properties | ArcGIS FeatureServer | `hud-{PROPERTY_ID}` | Management agent org + contact |
+| HUD REAC       | Multifamily Assisted Properties | ArcGIS FeatureServer | `hud-{PROPERTY_ID}` | Management agent org + contact (split by state) |
 | Los Angeles    | LADBS Code Enforcement Cases | Socrata | `la-{CSNumber}` | None |
 | Austin         | Code Complaint Cases | Socrata | `austin-{PARCELID}` | None |
 | Miami-Dade     | Code Compliance Violations + Building Violations | ArcGIS REST | `miami-{FOLIO}` | Building Violation VIOL_NAME (owner/agent) |
@@ -112,6 +112,20 @@ cross-referencing with city-level landlord data.
 Data source: HUD Multifamily Properties — Assisted (ArcGIS Feature Service),
 ~23,800 properties nationwide.  Only the most recent inspection per property
 is published.
+
+#### State-level jurisdiction splits
+
+As of v0.3.0, HUD REAC data is split into per-state jurisdictions using the
+`STD_ST` (state code) field from the raw data.  Each property's jurisdiction
+becomes `hud_reac_<state>` (e.g. `hud_reac_ny`, `hud_reac_ca`).  This means:
+
+- **Ownership resolution** groups management agents within each state rather
+  than nationwide, avoiding inflated portfolio sizes from name collisions
+  across states.
+- **SVI percentile scoring** computes percentile ranks within each state
+  pool, producing more meaningful comparisons (a property in New York is
+  compared to other New York HUD properties, not to all 23K nationwide).
+- **Streamlit display** renders these as "HUD REAC — New York", etc.
 
 ## Severity Mapping
 
