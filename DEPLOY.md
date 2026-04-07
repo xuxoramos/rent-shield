@@ -63,31 +63,28 @@ cd deploy
 docker compose up -d --build
 ```
 
-Verify:
+Verify (after TLS is configured per §5):
 ```bash
-curl http://localhost/healthz          # nginx → "ok"
-curl http://localhost/                  # Streamlit renter HTML
-curl http://localhost/investigator/    # Streamlit investigator HTML
-curl -H "X-API-Key: $LI_API_KEY" http://localhost/api/investigator/jurisdictions  # API
+curl -I https://rentershield.org/healthz          # 200 "ok"
+curl -I https://rentershield.org/                  # 301 → /about
+curl -I https://rentershield.org/about             # landing page HTML
+curl -I https://rentershield.org/investigator/     # Streamlit investigator HTML
+curl -H "X-API-Key: $LI_API_KEY" https://rentershield.org/api/investigator/jurisdictions  # API
 ```
 
 ## 5. TLS with Let's Encrypt
 
+The nginx config is already set up for `rentershield.org`. Just obtain the
+certificate and restart:
+
 ```bash
 apt install -y certbot
 
-# Get certificate (stop nginx briefly)
+# Get certificate (stop nginx briefly so certbot can bind :80)
 docker compose stop nginx
-certbot certonly --standalone -d your-domain.example.com
+certbot certonly --standalone -d rentershield.org -d www.rentershield.org
 docker compose start nginx
 ```
-
-Then in `deploy/nginx.conf`:
-1. Uncomment the HTTPS server block.
-2. Replace `your-domain.example.com` with your actual domain.
-3. Uncomment the HTTP → HTTPS redirect.
-4. Uncomment the certbot volume mount in `deploy/docker-compose.yml`.
-5. Restart: `docker compose restart nginx`.
 
 Auto-renew:
 ```bash
@@ -107,9 +104,12 @@ docker compose -f deploy/docker-compose.yml restart app
 ## Architecture
 
 ```
-Internet → Hetzner VPS (Germany)
-  ├─ :80/:443  nginx (rate-limited reverse proxy)
-  │    ├─ /              → Streamlit (:8501)  — renter public dashboard
+Internet → https://rentershield.org → Hetzner VPS (Germany)
+  ├─ :80           nginx — redirects HTTP → HTTPS
+  ├─ :443          nginx (TLS, rate-limited reverse proxy)
+  │    ├─ /              → 301 redirect to /about (landing page)
+  │    ├─ /about         → static landing page
+  │    ├─ /*             → Streamlit (:8501)  — renter public dashboard
   │    ├─ /investigator/ → Streamlit (:8502)  — investigator dashboard
   │    └─ /api/*         → FastAPI  (:8000)   — API key required
   └─ Data:  output/all_landlords_harm_scores.parquet (mounted read-only)
