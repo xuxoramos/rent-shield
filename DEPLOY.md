@@ -99,7 +99,7 @@ cd deploy
 docker compose up -d --build
 ```
 
-Verify (after TLS is configured per §6):
+Verify (after TLS is configured in the next section):
 ```bash
 curl -I https://rentershield.org/healthz          # 200 "ok"
 curl -I https://rentershield.org/                  # 301 → /about

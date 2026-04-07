@@ -19,6 +19,8 @@ pass() { printf "${GREEN}✓ %s${NC}\n" "$1"; }
 warn() { printf "${YELLOW}⚠ %s${NC}\n" "$1"; }
 fail() { printf "${RED}✗ %s${NC}\n" "$1"; }
 
+# curl returns "000" when the connection is refused or times out.
+CURL_CONN_FAIL="000"
 errors=0
 
 # ── 1. DNS resolution ───────────────────────────────────────────
@@ -74,8 +76,8 @@ fi
 echo ""
 echo "=== HTTP Response ==="
 
-http_status=$(curl -sI -o /dev/null -w "%{http_code}" --max-time 10 "http://$DOMAIN/" 2>/dev/null || echo "000")
-if [ "$http_status" = "000" ]; then
+http_status=$(curl -sI -o /dev/null -w "%{http_code}" --max-time 10 "http://$DOMAIN/" 2>/dev/null || echo "$CURL_CONN_FAIL")
+if [ "$http_status" = "$CURL_CONN_FAIL" ]; then
     fail "http://$DOMAIN/ — no response (connection refused or timed out)"
     errors=$((errors + 1))
 elif [ "$http_status" = "301" ] || [ "$http_status" = "302" ]; then
@@ -88,8 +90,8 @@ fi
 echo ""
 echo "=== HTTPS / TLS ==="
 
-https_status=$(curl -sI -o /dev/null -w "%{http_code}" --max-time 10 "https://$DOMAIN/" 2>/dev/null || echo "000")
-if [ "$https_status" = "000" ]; then
+https_status=$(curl -sI -o /dev/null -w "%{http_code}" --max-time 10 "https://$DOMAIN/" 2>/dev/null || echo "$CURL_CONN_FAIL")
+if [ "$https_status" = "$CURL_CONN_FAIL" ]; then
     fail "https://$DOMAIN/ — no response (TLS handshake failed or port 443 unreachable)"
     echo "  Fix: Ensure certbot has issued certificates (see DEPLOY.md §6)."
     errors=$((errors + 1))
