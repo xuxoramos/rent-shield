@@ -57,7 +57,7 @@ jobs:
             if [ ! -d /opt/renter-shield/.git ]; then
               cd /opt/renter-shield
               git init
-              git remote add origin https://github.com/xuxoramos/rent-shield.git
+              git remote add origin https://github.com/xuxoramos/renter-shield.git
               git fetch origin main
               git checkout -f origin/main -B main
             else
