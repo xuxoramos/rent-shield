@@ -18,7 +18,7 @@ wait_for() {
     echo "[readiness] waiting for $name on port $port (max ${max}s)..."
     elapsed=0
     while [ "$elapsed" -lt "$max" ]; do
-        if wget -qO /dev/null "http://127.0.0.1:${port}/" 2>/dev/null; then
+        if curl -sf "http://127.0.0.1:${port}/" > /dev/null 2>&1; then
             echo "[readiness] $name is ready (${elapsed}s)"
             return 0
         fi

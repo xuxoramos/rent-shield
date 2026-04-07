@@ -78,7 +78,8 @@ jobs:
             cd deploy
             docker compose up -d --build --remove-orphans
 
-            # Wait and verify
-            sleep 5
+            # Wait for health checks to pass (Streamlit needs time to load data)
+            echo "Waiting for services to become healthy..."
+            timeout 240 sh -c 'until docker compose ps app | grep -q healthy; do sleep 5; done' || true
             docker compose ps
           DEPLOY

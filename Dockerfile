@@ -2,8 +2,8 @@ FROM python:3.12-slim AS base
 
 WORKDIR /app
 
-# System deps (none needed beyond Python, but keep layer for future)
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# System deps
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
@@ -28,9 +28,9 @@ ENV LI_OUTPUT_DIR=/app/output \
     LI_API_KEYS=changeme
 
 # Health check — all three services must respond
-HEALTHCHECK --interval=10s --timeout=5s --start-period=120s --retries=3 \
-    CMD wget -qO /dev/null http://127.0.0.1:8000/health && \
-        wget -qO /dev/null http://127.0.0.1:8501/renter/_stcore/health && \
-        wget -qO /dev/null http://127.0.0.1:8502/investigator/_stcore/health || exit 1
+HEALTHCHECK --interval=10s --timeout=5s --start-period=180s --retries=3 \
+    CMD curl -sf http://127.0.0.1:8000/health > /dev/null && \
+        curl -sf http://127.0.0.1:8501/renter/_stcore/health > /dev/null && \
+        curl -sf http://127.0.0.1:8502/investigator/_stcore/health > /dev/null || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
