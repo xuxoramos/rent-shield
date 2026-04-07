@@ -689,6 +689,7 @@ app = FastAPI(
         "can access all routes; renter keys are restricted to `/renter/` endpoints."
     ),
     version="0.2.0",
+    root_path="/api",
 )
 
 app.include_router(renter_router)
