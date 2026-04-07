@@ -32,7 +32,8 @@ services:
       - ./landing:/usr/share/nginx/html/landing:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
-      - app
+      app:
+        condition: service_healthy
 
 volumes:
   app-logs:

@@ -12,6 +12,23 @@ supervise() {
     done
 }
 
+# --- Wait for a service to be ready on a given port ---
+wait_for() {
+    name="$1"; port="$2"; max="$3"
+    echo "[readiness] waiting for $name on port $port (max ${max}s)..."
+    elapsed=0
+    while [ "$elapsed" -lt "$max" ]; do
+        if wget -qO /dev/null "http://127.0.0.1:${port}/" 2>/dev/null; then
+            echo "[readiness] $name is ready (${elapsed}s)"
+            return 0
+        fi
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+    echo "[readiness] WARNING: $name not ready after ${max}s — continuing anyway"
+    return 0
+}
+
 # Start FastAPI (supervised, background)
 # Two workers fit comfortably on an 8 GB VPS (~150-200 MB each).
 supervise uvicorn uvicorn renter_shield.api:app \
@@ -31,17 +48,22 @@ supervise renter-streamlit streamlit run streamlit_renter.py \
     --server.baseUrlPath renter \
     --browser.gatherUsageStats false &
 
-# Start investigator Streamlit (supervised, foreground — keeps container alive)
-exec sh -c 'while true; do
-    echo "[supervisor] starting investigator-streamlit"
-    streamlit run streamlit_investigator.py \
-        --server.port 8502 \
-        --server.address 0.0.0.0 \
-        --server.headless true \
-        --server.fileWatcherType none \
-        --server.maxMessageSize 200 \
-        --server.baseUrlPath investigator \
-        --browser.gatherUsageStats false || true
-    echo "[supervisor] investigator-streamlit exited, restarting in 2s..."
-    sleep 2
-done'
+# --- Wait for all services before accepting traffic ---
+wait_for "FastAPI"                8000 60
+wait_for "Renter Streamlit"       8501 90
+
+# Start investigator Streamlit (supervised, background)
+supervise investigator-streamlit streamlit run streamlit_investigator.py \
+    --server.port 8502 \
+    --server.address 0.0.0.0 \
+    --server.headless true \
+    --server.fileWatcherType none \
+    --server.maxMessageSize 200 \
+    --server.baseUrlPath investigator \
+    --browser.gatherUsageStats false &
+
+wait_for "Investigator Streamlit" 8502 90
+echo "[readiness] all services ready"
+
+# Keep container alive — wait on all background jobs
+wait

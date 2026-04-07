@@ -27,4 +27,10 @@ RUN chmod +x /entrypoint.sh
 ENV LI_OUTPUT_DIR=/app/output \
     LI_API_KEYS=changeme
 
+# Health check — all three services must respond
+HEALTHCHECK --interval=10s --timeout=5s --start-period=120s --retries=3 \
+    CMD wget -qO /dev/null http://127.0.0.1:8000/health && \
+        wget -qO /dev/null http://127.0.0.1:8501/renter/_stcore/health && \
+        wget -qO /dev/null http://127.0.0.1:8502/investigator/_stcore/health || exit 1
+
 ENTRYPOINT ["/entrypoint.sh"]
